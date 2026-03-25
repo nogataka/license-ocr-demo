@@ -420,7 +420,8 @@ function runOcr(imageBlob: Blob, img: HTMLImageElement, imgUrl: string): void {
     }
   };
 
-  const baseUrl = import.meta.env.BASE_URL;
+  const raw = import.meta.env.BASE_URL;
+  const baseUrl = raw.endsWith("/") ? raw : raw + "/";
   worker.postMessage({ type: "run", imageBlob, presetId: "standard", baseUrl });
 }
 
