@@ -23,8 +23,8 @@ import {
 
 // Message types
 export type WorkerMessage =
-  | { type: "run"; imageBlob: Blob; presetId: string }
-  | { type: "init"; presetId: string };
+  | { type: "run"; imageBlob: Blob; presetId: string; baseUrl: string }
+  | { type: "init"; presetId: string; baseUrl: string };
 
 export type WorkerResponse =
   | { type: "init-progress"; model: string; loaded: number; total: number }
@@ -52,7 +52,7 @@ function getPreset(presetId: string): ModelPreset {
     ?? MODEL_PRESETS.find((p) => p.id === DEFAULT_PRESET_ID)!;
 }
 
-async function initModels(presetId: string): Promise<void> {
+async function initModels(presetId: string, baseUrl: string): Promise<void> {
   const preset = getPreset(presetId);
 
   if (currentPresetId === preset.id && detector && recognizer) {
@@ -66,7 +66,7 @@ async function initModels(presetId: string): Promise<void> {
   recognizer = new PARSeqRecognizer();
 
   const deimBuffer = await fetchModel(
-    preset.deim.url,
+    baseUrl + preset.deim.url,
     preset.deim.name,
     (loaded, total) =>
       post({ type: "init-progress", model: "DEIM (検出)", loaded, total }),
@@ -74,7 +74,7 @@ async function initModels(presetId: string): Promise<void> {
   await detector.init(deimBuffer, preset.deim);
 
   const parseqBuffer = await fetchModel(
-    preset.parseq.url,
+    baseUrl + preset.parseq.url,
     preset.parseq.name,
     (loaded, total) =>
       post({ type: "init-progress", model: "PARSeq (認識)", loaded, total }),
@@ -85,9 +85,9 @@ async function initModels(presetId: string): Promise<void> {
   post({ type: "init-done" });
 }
 
-async function runOcr(imageBlob: Blob, presetId: string): Promise<void> {
+async function runOcr(imageBlob: Blob, presetId: string, baseUrl: string): Promise<void> {
   try {
-    await initModels(presetId);
+    await initModels(presetId, baseUrl);
 
     const imageData = await decodeImage(imageBlob);
     const imgW = imageData.width;
@@ -150,11 +150,11 @@ self.onmessage = async (e: MessageEvent<WorkerMessage>) => {
   const msg = e.data;
   if (msg.type === "init") {
     try {
-      await initModels(msg.presetId);
+      await initModels(msg.presetId, msg.baseUrl);
     } catch (err) {
       post({ type: "error", message: err instanceof Error ? err.message : String(err) });
     }
   } else if (msg.type === "run") {
-    await runOcr(msg.imageBlob, msg.presetId);
+    await runOcr(msg.imageBlob, msg.presetId, msg.baseUrl);
   }
 };

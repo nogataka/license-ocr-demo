@@ -18,12 +18,12 @@ export const MODEL_PRESETS: ModelPreset[] = [
     label: "標準 (77MB)",
     description: "FP32 — 最高精度",
     deim: {
-      url: `${import.meta.env.BASE_URL}models/deim-s-1024x1024.onnx`,
+      url: "models/deim-s-1024x1024.onnx",
       inputShape: [1, 3, 800, 800],
       name: "deim-s-1024x1024.onnx",
     },
     parseq: {
-      url: `${import.meta.env.BASE_URL}models/parseq_rec.onnx`,
+      url: "models/parseq_rec.onnx",
       inputShape: [1, 3, 16, 768],
       name: "parseq_rec.onnx",
     },
