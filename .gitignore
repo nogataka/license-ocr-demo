@@ -1,0 +1,18 @@
+# Dependencies
+node_modules/
+
+# Build
+dist/
+
+# Astro
+.astro/
+
+# OS
+.DS_Store
+
+# Editor
+.smart-edit/
+
+# Environment
+.env
+.env.*

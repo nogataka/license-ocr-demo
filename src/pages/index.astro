@@ -1,0 +1,423 @@
+---
+// No server-side logic needed — all processing is client-side
+---
+
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>運転免許証リーダー</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <style is:global>
+      *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+      :root {
+        --color-bg: #f8fafb;
+        --color-surface: #ffffff;
+        --color-border: #e5e9ed;
+        --color-text: #1a2332;
+        --color-text-secondary: #5f6d7e;
+        --color-text-muted: #8d99a8;
+        --color-accent: #2563eb;
+        --color-accent-hover: #1d4ed8;
+        --color-accent-light: #eff4ff;
+        --color-success: #16a34a;
+        --radius: 10px;
+        --transition: 180ms ease;
+      }
+
+      body {
+        font-family: "Noto Sans JP", -apple-system, BlinkMacSystemFont, sans-serif;
+        background: var(--color-bg);
+        color: var(--color-text);
+        line-height: 1.6;
+        min-height: 100dvh;
+      }
+
+      /* -- Layout -- */
+      .app {
+        max-width: 960px;
+        margin: 0 auto;
+        padding: 32px 20px 64px;
+      }
+
+      /* -- Header -- */
+      .app-header {
+        text-align: center;
+        margin-bottom: 28px;
+      }
+      .app-header h1 {
+        font-size: 22px;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        color: var(--color-text);
+      }
+      .app-header p {
+        font-size: 13px;
+        color: var(--color-text-muted);
+        margin-top: 4px;
+      }
+
+      /* -- Notice -- */
+      .notice {
+        font-size: 12px;
+        line-height: 1.7;
+        color: var(--color-text-secondary);
+        text-align: center;
+        margin-bottom: 20px;
+      }
+
+      /* -- Drop zone -- */
+      #drop-zone {
+        border: 2px dashed var(--color-border);
+        border-radius: var(--radius);
+        padding: 24px;
+        text-align: center;
+        background: var(--color-surface);
+        cursor: pointer;
+        transition: border-color var(--transition), background var(--transition);
+      }
+      #drop-zone:hover {
+        border-color: var(--color-accent);
+        background: var(--color-accent-light);
+      }
+      #drop-zone.dragover {
+        border-color: var(--color-accent);
+        background: var(--color-accent-light);
+      }
+      #drop-zone .drop-icon {
+        width: 40px;
+        height: 40px;
+        margin: 0 auto 12px;
+        color: var(--color-text-muted);
+      }
+      #drop-zone p {
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--color-text-secondary);
+      }
+      #drop-zone .hint {
+        font-size: 12px;
+        color: var(--color-text-muted);
+        margin-top: 4px;
+      }
+      #file-input { display: none; }
+
+      /* -- Edit section -- */
+      #edit-section {
+        display: none;
+        margin-top: 24px;
+      }
+      #edit-section.visible {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+
+      .edit-card {
+        background: var(--color-surface);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius);
+        overflow: hidden;
+      }
+      .edit-card-header {
+        padding: 10px 16px;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--color-text-secondary);
+        border-bottom: 1px solid var(--color-border);
+      }
+      .edit-card-body {
+        padding: 12px;
+      }
+      .edit-card-body canvas {
+        width: 100%;
+        height: auto;
+        display: block;
+        border-radius: 6px;
+      }
+      #src-canvas { cursor: crosshair; }
+
+      .edit-actions {
+        grid-column: 1 / -1;
+        margin-top: 4px;
+        text-align: center;
+      }
+
+      @media (max-width: 640px) {
+        #edit-section.visible {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      /* -- Buttons -- */
+      .btn-primary {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 12px 32px;
+        border: none;
+        border-radius: var(--radius);
+        background: var(--color-accent);
+        color: #fff;
+        cursor: pointer;
+        font-family: inherit;
+        font-size: 15px;
+        font-weight: 600;
+        transition: background var(--transition), transform var(--transition);
+      }
+      .btn-primary:hover { background: var(--color-accent-hover); }
+      .btn-primary:active { transform: scale(0.98); }
+      .btn-primary:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none;
+      }
+      .btn-primary svg {
+        width: 18px;
+        height: 18px;
+      }
+
+      .btn-small {
+        padding: 6px 12px;
+        border: 1px solid var(--color-border);
+        border-radius: 6px;
+        background: var(--color-surface);
+        cursor: pointer;
+        font-family: inherit;
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--color-text-secondary);
+        transition: background var(--transition);
+      }
+      .btn-small:hover { background: var(--color-bg); }
+
+      /* -- Progress -- */
+      #progress-section {
+        display: none;
+        margin-top: 24px;
+        background: var(--color-surface);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius);
+        padding: 20px;
+      }
+      #progress-label {
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--color-text-secondary);
+      }
+      .progress-track {
+        background: #e8ecf0;
+        border-radius: 4px;
+        height: 6px;
+        margin-top: 10px;
+        overflow: hidden;
+      }
+      .progress-fill {
+        height: 100%;
+        background: var(--color-accent);
+        border-radius: 4px;
+        width: 0%;
+        transition: width 0.3s ease;
+      }
+
+      /* -- Result section -- */
+      #result-section {
+        display: none;
+        margin-top: 24px;
+      }
+      #result-section.visible {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        align-items: start;
+      }
+      #result-section .result-footer {
+        grid-column: 1 / -1;
+      }
+      @media (max-width: 640px) {
+        #result-section.visible {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      .result-card {
+        background: var(--color-surface);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius);
+        overflow: hidden;
+      }
+      @media (max-width: 640px) {
+        .result-card + .result-card {
+          margin-top: 12px;
+        }
+      }
+      .result-card-header {
+        padding: 12px 16px;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--color-text-secondary);
+        border-bottom: 1px solid var(--color-border);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .result-card-body {
+        padding: 4px 16px;
+      }
+
+      /* -- Canvas -- */
+      #result-canvas {
+        width: 100%;
+        height: auto;
+        display: block;
+        border-radius: 6px;
+      }
+
+      /* -- Fields -- */
+      .field-row {
+        display: flex;
+        align-items: baseline;
+        padding: 12px 0;
+        border-bottom: 1px solid var(--color-border);
+      }
+      .field-row:last-child { border-bottom: none; }
+      .field-label {
+        width: 100px;
+        flex-shrink: 0;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--color-text-muted);
+      }
+      .field-value {
+        flex: 1;
+        font-size: 15px;
+        font-weight: 500;
+        color: var(--color-text);
+      }
+      .field-value.empty {
+        color: var(--color-text-muted);
+        font-weight: 400;
+        font-size: 13px;
+      }
+
+      /* -- Debug -- */
+      .debug-toggle {
+        cursor: pointer;
+        color: var(--color-text-muted);
+        font-size: 12px;
+        user-select: none;
+      }
+      #text-output {
+        white-space: pre-wrap;
+        font-size: 12px;
+        line-height: 1.6;
+        color: var(--color-text-muted);
+        margin-top: 8px;
+      }
+
+      /* -- Reset button -- */
+      .reset-area {
+        text-align: center;
+        margin-top: 20px;
+      }
+
+      /* -- Responsive -- */
+      @media (max-width: 480px) {
+        .app { padding: 20px 16px 48px; }
+        .app-header h1 { font-size: 19px; }
+        .field-label { width: 80px; }
+        .field-value { font-size: 14px; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <header class="app-header">
+        <h1>運転免許証リーダー</h1>
+        <p>ブラウザ完結型 OCR &mdash; 画像はサーバーに送信されません</p>
+      </header>
+
+      <p class="notice">
+        初回のみAIモデル（約77MB）をダウンロードします。2回目以降はキャッシュ済みです。
+      </p>
+
+      <div id="drop-zone">
+        <svg class="drop-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="17 8 12 3 7 8"/>
+          <line x1="12" y1="3" x2="12" y2="15"/>
+        </svg>
+        <p>免許証の画像をドロップまたはクリック</p>
+        <p class="hint">JPEG / PNG</p>
+        <input type="file" id="file-input" accept="image/*" />
+      </div>
+
+      <section id="edit-section">
+        <div class="edit-card">
+          <div class="edit-card-header">免許証の四隅をドラッグで調整</div>
+          <div class="edit-card-body">
+            <canvas id="src-canvas"></canvas>
+          </div>
+        </div>
+        <div class="edit-card">
+          <div class="edit-card-header">補正プレビュー</div>
+          <div class="edit-card-body">
+            <canvas id="preview-canvas"></canvas>
+          </div>
+        </div>
+        <div class="edit-actions">
+          <button class="btn-primary" id="btn-correct-ocr">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="9 11 12 14 22 4"/>
+              <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+            </svg>
+            読み取り開始
+          </button>
+        </div>
+      </section>
+
+      <section id="progress-section">
+        <div id="progress-label">準備中...</div>
+        <div class="progress-track">
+          <div class="progress-fill" id="progress-bar"></div>
+        </div>
+      </section>
+
+      <section id="result-section">
+        <div class="result-card">
+          <div class="result-card-header">検出結果</div>
+          <div class="result-card-body" style="padding: 12px" id="canvas-container">
+            <canvas id="result-canvas"></canvas>
+          </div>
+        </div>
+        <div class="result-card">
+          <div class="result-card-header">
+            読み取り結果
+            <button class="btn-small" id="copy-btn">コピー</button>
+          </div>
+          <div class="result-card-body">
+            <div id="fields-output"></div>
+          </div>
+        </div>
+        <div class="result-footer">
+          <details style="margin-top: 8px">
+            <summary class="debug-toggle">生テキスト（デバッグ用）</summary>
+            <div id="text-output"></div>
+          </details>
+          <div class="reset-area">
+            <button class="btn-small" id="reset-btn">別の画像を読み取る</button>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <script>
+      import "../main.ts";
+    </script>
+  </body>
+</html>
