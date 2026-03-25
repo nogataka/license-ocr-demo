@@ -1,6 +1,8 @@
 import { defineConfig } from "astro/config";
 
 export default defineConfig({
+  site: "https://nogataka.github.io",
+  base: "/license-ocr-demo",
   server: {
     port: 7575,
     headers: {
