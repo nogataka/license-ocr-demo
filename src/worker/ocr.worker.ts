@@ -5,6 +5,11 @@
  * and posts results back to the main thread.
  */
 
+import * as ort from "onnxruntime-web";
+
+// Force single-threaded WASM to avoid SharedArrayBuffer issues on GitHub Pages
+ort.env.wasm.numThreads = 1;
+
 import { DEIMDetector, type Detection } from "../engine/deim";
 import { PARSeqRecognizer } from "../engine/parseq-recognizer";
 import { cropImageData, decodeImage } from "../engine/image-utils";
