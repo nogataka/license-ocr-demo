@@ -5,7 +5,7 @@
  * coordinate, then concatenate texts within each zone in reading order.
  */
 
-import { LICENSE_ZONES, type LicenseZone } from "./license-zones";
+import { LICENSE_ZONES, type LicenseZone } from "./zone-defs";
 
 export interface OcrBox {
   text: string;
@@ -22,6 +22,7 @@ export interface LicenseData {
   address: string | null;
   expiryDate: string | null;
   issueDate: string | null;
+  conditions: string | null;
 }
 
 /** Labels to strip from extracted text */
@@ -33,7 +34,7 @@ const LABEL_PATTERNS = [
   /^交\s*付\s*/,
   /^有効期限\s*/,
   /^条\s*件\s*等?\s*/,
-  /^免許の条件等\s*/,
+  /免許の条件等/,
   /^番\s*号\s*/,
 ];
 
@@ -49,10 +50,13 @@ export function matchFieldsToZones(
   imgW: number,
   imgH: number,
 ): LicenseData {
+  // Pre-merge vertically adjacent short lines (e.g. "免許の" + "条件等")
+  const merged = mergeAdjacentLines(boxes, imgW, imgH);
+
   // Group boxes by zone
   const zoneTexts = new Map<string, { text: string; cx: number; cy: number }[]>();
 
-  for (const box of boxes) {
+  for (const box of merged) {
     if (!box.text.trim()) continue;
 
     // Normalized center coordinates
@@ -76,6 +80,7 @@ export function matchFieldsToZones(
     address: null,
     expiryDate: null,
     issueDate: null,
+    conditions: null,
   };
 
   for (const [field, entries] of zoneTexts) {
@@ -115,6 +120,76 @@ export function matchFieldsToZones(
       case "issueDate":
         result.issueDate = cleanDate(text);
         break;
+      case "conditions":
+        result.conditions = text;
+        break;
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Merge vertically stacked short lines that share a similar X position.
+ * Handles cases like "免許の" + "条件等" → "免許の条件等".
+ */
+function mergeAdjacentLines(boxes: OcrBox[], imgW: number, imgH: number): OcrBox[] {
+  if (boxes.length === 0) return boxes;
+
+  const result: OcrBox[] = [];
+  const used = new Set<number>();
+
+  for (let i = 0; i < boxes.length; i++) {
+    if (used.has(i)) continue;
+
+    const cur = boxes[i];
+
+    // Only try to merge short narrow lines
+    if (cur.w / imgW > 0.15 || cur.text.trim().length > 5) {
+      result.push(cur);
+      continue;
+    }
+
+    // Search ALL other boxes for a vertical neighbor with similar X
+    let bestJ = -1;
+    let bestGap = Infinity;
+    for (let j = 0; j < boxes.length; j++) {
+      if (j === i || used.has(j)) continue;
+      const next = boxes[j];
+
+      // Next must also be short
+      if (next.w / imgW > 0.15 || next.text.trim().length > 5) continue;
+
+      // Must be below cur
+      const gap = next.y - (cur.y + cur.h);
+      if (gap < -cur.h * 0.5 || gap > cur.h * 3) continue;
+
+      // X positions must be close (left edges within 1 line-height)
+      if (Math.abs(cur.x - next.x) > cur.h * 1.5) continue;
+
+      if (gap < bestGap) {
+        bestGap = gap;
+        bestJ = j;
+      }
+    }
+
+    if (bestJ >= 0) {
+      const next = boxes[bestJ];
+      const mx = Math.min(cur.x, next.x);
+      const my = Math.min(cur.y, next.y);
+      const mx2 = Math.max(cur.x + cur.w, next.x + next.w);
+      const my2 = Math.max(cur.y + cur.h, next.y + next.h);
+
+      result.push({
+        text: cur.text.trim() + next.text.trim(),
+        x: mx,
+        y: my,
+        w: mx2 - mx,
+        h: my2 - my,
+      });
+      used.add(bestJ);
+    } else {
+      result.push(cur);
     }
   }
 

@@ -1,12 +1,10 @@
 /**
- * Port of src/reading_order/order/reorder.py
- *
  * Sorts LINE elements within TEXTBLOCKs and the page level.
  */
 
-import type { Element } from "../parser/ndl-parser";
-import { smoothOrder } from "./smooth-order";
-import { withGroupedWarichu } from "./warichu";
+import type { Element } from "../layout/detection-builder";
+import { smoothOrder } from "./smooth";
+import { withGroupedWarichu } from "./inline-note";
 
 function checkIou(
   a: [number, number, number, number],

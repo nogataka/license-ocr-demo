@@ -1,13 +1,11 @@
 /**
- * Port of src/reading_order/xy_cut/eval.py — eval_xml
- *
  * Assigns reading order to LINE elements and sorts them.
  */
 
-import type { Element } from "../parser/ndl-parser";
-import { findAll } from "../parser/ndl-parser";
-import { solveXyCut } from "./xy-cut";
-import { sortLines } from "./reorder";
+import type { Element } from "../layout/detection-builder";
+import { findAll } from "../layout/detection-builder";
+import { solveXyCut } from "./bisect";
+import { sortLines } from "./arrange";
 
 /**
  * Evaluate and sort a parsed page element tree.

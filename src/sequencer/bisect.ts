@@ -1,6 +1,4 @@
 /**
- * Port of src/reading_order/xy_cut/block_xy_cut.py
- *
  * XY-Cut algorithm for document layout block segmentation and reading order.
  */
 

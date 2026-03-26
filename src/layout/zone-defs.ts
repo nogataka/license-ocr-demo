@@ -48,5 +48,6 @@ export const LICENSE_ZONES: LicenseZone[] = [
   { field: "address",      label: "住所",       x0: 0.00, y0: 0.12, x1: 0.70, y1: 0.26 },
   { field: "issueDate",    label: "交付",       x0: 0.00, y0: 0.26, x1: 0.70, y1: 0.33 },
   { field: "expiryDate",   label: "有効期限",   x0: 0.00, y0: 0.33, x1: 0.70, y1: 0.40 },
+  { field: "conditions",   label: "条件等",     x0: 0.00, y0: 0.40, x1: 0.70, y1: 0.56 },
   { field: "licenseNumber",label: "免許証番号", x0: 0.00, y0: 0.60, x1: 0.70, y1: 0.78 },
 ];

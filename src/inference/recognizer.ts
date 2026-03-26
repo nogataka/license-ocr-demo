@@ -8,10 +8,10 @@
  */
 
 import * as ort from "onnxruntime-web";
-import { resizeForParseq } from "./image-utils";
-import { normalizeBgr, hwcToChw, argmaxAxis2 } from "./tensor-utils";
-import { CHARSET_TRAIN } from "../config/charset";
-import { type ModelConfig } from "../config/model-config";
+import { resizeForParseq } from "./image-ops";
+import { normalizeBgr, hwcToChw, argmaxAxis2 } from "./tensor-ops";
+import { CHARSET_TRAIN } from "../settings/vocab";
+import { type ModelConfig } from "../settings/presets";
 
 export class PARSeqRecognizer {
   private session: ort.InferenceSession | null = null;

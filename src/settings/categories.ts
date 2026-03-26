@@ -1,4 +1,4 @@
-export const NDL_CLASSES: Record<number, string> = {
+export const DETECTION_CATEGORIES: Record<number, string> = {
   0: "text_block",
   1: "line_main",
   2: "line_caption",
@@ -18,9 +18,9 @@ export const NDL_CLASSES: Record<number, string> = {
   16: "line_title",
 };
 
-export const NDL_CLASSES_LIST: string[] = Object.values(NDL_CLASSES);
+export const CATEGORY_LIST: string[] = Object.values(DETECTION_CATEGORIES);
 
-export const NDL_ORG_NAMES: Record<string, string> = {
+export const CATEGORY_LABELS: Record<string, string> = {
   text_block: "本文ブロック",
   line_main: "本文",
   line_caption: "キャプション",
@@ -40,6 +40,6 @@ export const NDL_ORG_NAMES: Record<string, string> = {
   line_title: "タイトル本文",
 };
 
-export function nameToOrgName(name: string): string {
-  return NDL_ORG_NAMES[name] ?? name;
+export function categoryToLabel(name: string): string {
+  return CATEGORY_LABELS[name] ?? name;
 }

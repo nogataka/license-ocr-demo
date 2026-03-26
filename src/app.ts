@@ -1,7 +1,7 @@
-import type { WorkerResponse } from "./worker/ocr.worker";
-import { matchFieldsToZones, type LicenseData } from "./parser/template-matcher";
-import { computeHomography, applyPerspective } from "./engine/perspective";
-import type { Point } from "./engine/perspective";
+import type { WorkerResponse } from "./pipeline/ocr.worker";
+import { matchFieldsToZones, type LicenseData } from "./layout/field-extractor";
+import { computeHomography, applyPerspective } from "./inference/homography";
+import type { Point } from "./inference/homography";
 
 // DOM elements
 const dropZone = document.getElementById("drop-zone")!;
@@ -18,6 +18,7 @@ const resetBtn = document.getElementById("reset-btn")!;
 
 // Edit mode DOM elements
 const editSection = document.getElementById("edit-section")!;
+const editControls = document.getElementById("edit-controls")!;
 const srcCanvas = document.getElementById("src-canvas") as HTMLCanvasElement;
 const previewCanvas = document.getElementById("preview-canvas") as HTMLCanvasElement;
 const btnCorrectOcr = document.getElementById("btn-correct-ocr")!;
@@ -25,15 +26,19 @@ const btnCorrectOcr = document.getElementById("btn-correct-ocr")!;
 let worker: Worker | null = null;
 
 function createWorker(): Worker {
-  return new Worker(new URL("./worker/ocr.worker.ts", import.meta.url), {
+  return new Worker(new URL("./pipeline/ocr.worker.ts", import.meta.url), {
     type: "module",
   });
 }
 
+const progressPct = document.getElementById("progress-pct")!;
+
 function showProgress(label: string, pct: number): void {
   progressSection.style.display = "block";
   progressLabel.textContent = label;
-  progressBar.style.width = `${Math.round(pct * 100)}%`;
+  const pctVal = Math.round(pct * 100);
+  progressBar.style.width = `${pctVal}%`;
+  progressPct.textContent = `${pctVal}%`;
 }
 
 function hideProgress(): void {
@@ -72,6 +77,7 @@ const FIELD_LABELS: { key: keyof LicenseData; label: string }[] = [
   { key: "licenseNumber", label: "免許証番号" },
   { key: "expiryDate", label: "有効期限" },
   { key: "issueDate", label: "交付日" },
+  { key: "conditions", label: "免許の条件等" },
 ];
 
 function renderLicenseFields(data: LicenseData): void {
@@ -132,7 +138,9 @@ function enterEditMode(img: HTMLImageElement, imgUrl: string): void {
   srcCanvas.height = h;
 
   dropZone.style.display = "none";
+  emptyState.style.display = "none";
   editSection.classList.add("visible");
+  editControls.classList.add("visible");
   resultSection.classList.remove("visible");
 
   updateDisplayScale();
@@ -165,8 +173,10 @@ function drawSrcCanvas(): void {
   ctx.fill("evenodd");
   ctx.restore();
 
-  ctx.strokeStyle = "#2563eb";
-  ctx.lineWidth = Math.max(2, Math.round(w / 400));
+  const lw2 = Math.max(2, Math.round(w / 300));
+  ctx.strokeStyle = "#1e3a8a";
+  ctx.lineWidth = lw2;
+  ctx.setLineDash([lw2 * 3, lw2 * 2]);
   ctx.beginPath();
   ctx.moveTo(corners[0].x, corners[0].y);
   for (let i = 1; i < 4; i++) {
@@ -174,11 +184,12 @@ function drawSrcCanvas(): void {
   }
   ctx.closePath();
   ctx.stroke();
+  ctx.setLineDash([]);
 
   for (const pt of corners) {
     ctx.beginPath();
     ctx.arc(pt.x, pt.y, HANDLE_RADIUS / displayScale, 0, Math.PI * 2);
-    ctx.fillStyle = "#2563eb";
+    ctx.fillStyle = "#1e3a8a";
     ctx.fill();
     ctx.strokeStyle = "#fff";
     ctx.lineWidth = 2 / displayScale;
@@ -363,7 +374,9 @@ function runOcr(imageBlob: Blob, img: HTMLImageElement, imgUrl: string): void {
   }
 
   editSection.classList.remove("visible");
+  editControls.classList.remove("visible");
   resultSection.classList.remove("visible");
+  emptyState.style.display = "none";
   fieldsOutput.replaceChildren();
   textOutput.textContent = "";
   showProgress("モデルを初期化中...", 0);
@@ -409,6 +422,7 @@ function runOcr(imageBlob: Blob, img: HTMLImageElement, imgUrl: string): void {
         textOutput.textContent = text;
 
         resultSection.classList.add("visible");
+        resetBtn.style.display = "";
         URL.revokeObjectURL(imgUrl);
         break;
       }
@@ -425,11 +439,16 @@ function runOcr(imageBlob: Blob, img: HTMLImageElement, imgUrl: string): void {
   worker.postMessage({ type: "run", imageBlob, presetId: "standard", baseUrl });
 }
 
+const emptyState = document.getElementById("empty-state")!;
+
 function resetToUpload(): void {
   editSection.classList.remove("visible");
+  editControls.classList.remove("visible");
   resultSection.classList.remove("visible");
   progressSection.style.display = "none";
   dropZone.style.display = "";
+  resetBtn.style.display = "none";
+  emptyState.style.display = "";
   fileInput.value = "";
   editImg = null;
   if (editImgUrl) {

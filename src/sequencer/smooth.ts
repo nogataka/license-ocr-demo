@@ -1,11 +1,9 @@
 /**
- * Port of src/reading_order/order/smooth_order.py
- *
- * Replaces networkx with simple adjacency list + recursive path enumeration.
- * This works because node count < 20 and max_step is 2-3.
+ * Smooths reading order using minimum-weight Hamiltonian path.
+ * Uses adjacency list + recursive path enumeration (node count < 20).
  */
 
-import type { Element } from "../parser/ndl-parser";
+import type { Element } from "../layout/detection-builder";
 
 interface Edge {
   to: number;

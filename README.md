@@ -24,6 +24,7 @@
 | 免許証番号 | 12桁の免許証番号 |
 | 有効期限 | 有効期限の日付 |
 | 交付日 | 免許証の交付日 |
+| 免許の条件等 | 眼鏡等の条件 |
 
 ## 使い方
 
@@ -37,7 +38,7 @@
 
 ### 3. 結果の確認
 
-読み取り完了後、左に検出結果（バウンディングボックス付き画像）、右に抽出されたフィールドがカード形式で表示されます。
+読み取り完了後、右エリアに検出結果（バウンディングボックス付き画像）と抽出されたフィールドがカード形式で表示されます。
 
 ## 技術スタック
 
@@ -59,9 +60,9 @@
   ↓
 DEIM 検出 (文書レイアウト解析)
   ↓
-NDL Parser (検出結果→要素ツリー構築)
+レイアウト解析 (検出結果→要素ツリー構築)
   ↓
-Reading Order (XY-Cut アルゴリズムで読み順決定)
+読み順決定 (XY-Cut アルゴリズム)
   ↓
 PARSeq 認識 (行画像→テキスト)
   ↓
@@ -94,30 +95,30 @@ PARSeq 認識 (行画像→テキスト)
 src/
 ├── pages/
 │   └── index.astro          # メインページ (HTML + CSS)
-├── main.ts                   # UIロジック・イベント処理
-├── config/
-│   ├── model-config.ts       # モデルURL・入力サイズ定義
-│   ├── charset.ts            # NDL 7,141文字の文字セット
-│   └── ndl-classes.ts        # NDL 17クラス定義
-├── engine/
-│   ├── deim.ts               # DEIM 検出エンジン
-│   ├── parseq-recognizer.ts  # PARSeq 認識エンジン
-│   ├── image-utils.ts        # 画像デコード・リサイズ・切り出し
-│   ├── tensor-utils.ts       # テンソル変換・正規化
-│   └── perspective.ts        # 透視変換 (ホモグラフィー)
-├── parser/
-│   ├── ndl-parser.ts         # 検出結果→要素ツリー変換
-│   ├── license-zones.ts      # 免許証テンプレートゾーン定義
-│   └── template-matcher.ts   # ゾーンベースのフィールド抽出
-├── reading-order/
-│   ├── eval.ts               # 読み順評価
-│   ├── xy-cut.ts             # XY-Cut アルゴリズム
-│   ├── reorder.ts            # 要素並び替え
-│   ├── smooth-order.ts       # 読み順平滑化
-│   └── warichu.ts            # 割注処理
-├── storage/
-│   └── model-cache.ts        # IndexedDB モデルキャッシュ
-└── worker/
+├── app.ts                    # UIロジック・イベント処理
+├── settings/
+│   ├── presets.ts            # モデルURL・入力サイズ定義
+│   ├── vocab.ts              # 7,141文字の文字セット
+│   └── categories.ts         # 17クラス定義
+├── inference/
+│   ├── detector.ts           # DEIM 検出エンジン
+│   ├── recognizer.ts         # PARSeq 認識エンジン
+│   ├── image-ops.ts          # 画像デコード・リサイズ・切り出し
+│   ├── tensor-ops.ts         # テンソル変換・正規化
+│   └── homography.ts         # 透視変換 (ホモグラフィー)
+├── layout/
+│   ├── detection-builder.ts  # 検出結果→要素ツリー変換
+│   ├── zone-defs.ts          # 免許証テンプレートゾーン定義
+│   └── field-extractor.ts    # ゾーンベースのフィールド抽出
+├── sequencer/
+│   ├── evaluate.ts           # 読み順評価
+│   ├── bisect.ts             # XY-Cut アルゴリズム
+│   ├── arrange.ts            # 要素並び替え
+│   ├── smooth.ts             # 読み順平滑化
+│   └── inline-note.ts        # 割注処理
+├── cache/
+│   └── model-store.ts        # IndexedDB モデルキャッシュ
+└── pipeline/
     └── ocr.worker.ts         # Web Worker (OCR パイプライン実行)
 
 public/models/

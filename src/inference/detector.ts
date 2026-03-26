@@ -1,8 +1,8 @@
 import * as ort from "onnxruntime-web";
-import { padAndResize } from "./image-utils";
-import { normalizeImageNet, hwcToChw } from "./tensor-utils";
-import { NDL_CLASSES } from "../config/ndl-classes";
-import { DET_CONF_THRESHOLD, type ModelConfig } from "../config/model-config";
+import { padAndResize } from "./image-ops";
+import { normalizeImageNet, hwcToChw } from "./tensor-ops";
+import { DETECTION_CATEGORIES } from "../settings/categories";
+import { DET_CONF_THRESHOLD, type ModelConfig } from "../settings/presets";
 
 export interface Detection {
   classIndex: number;
@@ -101,7 +101,7 @@ export class DEIMDetector {
 
       detections.push({
         classIndex,
-        className: NDL_CLASSES[classIndex] ?? `class_${classIndex}`,
+        className: DETECTION_CATEGORIES[classIndex] ?? `class_${classIndex}`,
         confidence: score,
         box: [bx1, by1, bx2, by2],
         predCharCount: charCountsRaw ? Number(charCountsRaw[i]) : 0,

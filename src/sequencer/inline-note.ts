@@ -1,10 +1,8 @@
 /**
- * Port of src/reading_order/order/warichu_block.py
- *
- * Groups 割注 (warichu) LINE elements into WARICHUBLOCK elements.
+ * Groups inline-note (割注) LINE elements into WARICHUBLOCK elements.
  */
 
-import { type Element, createElement, findAll, findParent } from "../parser/ndl-parser";
+import { type Element, createElement, findAll, findParent } from "../layout/detection-builder";
 
 function parseBbox(el: Element): [number, number, number, number] {
   const x = parseInt(el.attrs.X);

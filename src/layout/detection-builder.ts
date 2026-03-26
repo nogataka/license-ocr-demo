@@ -1,12 +1,12 @@
 /**
- * Port of src/ndl_parser.py — convert_to_xml_string3 and supporting functions.
+ * Detection results to structured page tree.
  *
- * Instead of building XML strings, we produce a structured Page object
- * that the reading-order module can consume (using a simple tree of elements).
+ * Produces a structured Page object with TEXTBLOCKs, LINEs, and BLOCKs
+ * that the sequencer module can consume.
  */
 
-import type { Detection } from "../engine/deim";
-import { NDL_CLASSES_LIST, nameToOrgName } from "../config/ndl-classes";
+import type { Detection } from "../inference/detector";
+import { CATEGORY_LIST, categoryToLabel } from "../settings/categories";
 
 // ---- Element tree (lightweight XML substitute) ----
 
@@ -302,7 +302,7 @@ function refineTbRelationship(
 
 /**
  * Convert detections into a structured Element tree (PAGE with TEXTBLOCKs, LINEs, BLOCKs).
- * This is the TypeScript port of convert_to_xml_string3.
+ * Converts detection boxes into a hierarchical element tree.
  */
 export function detectionsToPage(
   imgW: number,
@@ -312,7 +312,7 @@ export function detectionsToPage(
   scoreThr: number = 0.1,
   minBboxSize: number = 5,
 ): Element {
-  const classes = NDL_CLASSES_LIST;
+  const classes = CATEGORY_LIST;
   const tbClsId = classes.indexOf("text_block");
   const baClsId = classes.indexOf("block_ad");
   const tableClsId = classes.indexOf("block_table");
@@ -357,7 +357,7 @@ export function detectionsToPage(
     const w = Math.round(bbox[2] - bbox[0]);
     const h = Math.round(bbox[3] - bbox[1]);
     return createElement("LINE", {
-      TYPE: nameToOrgName(classes[cId]),
+      TYPE: categoryToLabel(classes[cId]),
       X: String(x),
       Y: String(y),
       WIDTH: String(w),
@@ -396,7 +396,7 @@ export function detectionsToPage(
         if (w >= minBboxSize && h >= minBboxSize) {
           parent.children.push(
             createElement("LINE", {
-              TYPE: nameToOrgName(classes[1]),
+              TYPE: categoryToLabel(classes[1]),
               X: String(Math.round(x)),
               Y: String(Math.round(y)),
               WIDTH: String(Math.round(w)),
@@ -433,7 +433,7 @@ export function detectionsToPage(
           if (w >= minBboxSize && h >= minBboxSize) {
             block.children.push(
               createElement("LINE", {
-                TYPE: nameToOrgName(classes[0]),
+                TYPE: categoryToLabel(classes[0]),
                 X: String(Math.round(x)),
                 Y: String(Math.round(y)),
                 WIDTH: String(Math.round(w)),
@@ -475,7 +475,7 @@ export function detectionsToPage(
           if (w >= minBboxSize && h >= minBboxSize) {
             tb.children.push(
               createElement("LINE", {
-                TYPE: nameToOrgName(classes[0]),
+                TYPE: categoryToLabel(classes[0]),
                 X: String(Math.round(x)),
                 Y: String(Math.round(y)),
                 WIDTH: String(Math.round(w)),
@@ -506,7 +506,7 @@ export function detectionsToPage(
       if (w >= minBboxSize && h >= minBboxSize) {
         tb.children.push(
           createElement("LINE", {
-            TYPE: nameToOrgName(classes[1]),
+            TYPE: categoryToLabel(classes[1]),
             X: String(Math.round(x)),
             Y: String(Math.round(y)),
             WIDTH: String(Math.round(w)),
@@ -534,7 +534,7 @@ export function detectionsToPage(
         if (block[4] < scoreThr) continue;
         page.children.push(
           createElement("BLOCK", {
-            TYPE: nameToOrgName(classes[c]),
+            TYPE: categoryToLabel(classes[c]),
             X: String(Math.round(block[0])),
             Y: String(Math.round(block[1])),
             WIDTH: String(Math.round(block[2] - block[0])),

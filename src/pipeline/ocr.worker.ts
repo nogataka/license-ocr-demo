@@ -1,7 +1,7 @@
 /**
  * Web Worker: OCR Pipeline
  *
- * Receives an image, runs detection → parse → reading order → recognition,
+ * Receives an image, runs detection → layout → sequencing → recognition,
  * and posts results back to the main thread.
  */
 
@@ -10,21 +10,21 @@ import * as ort from "onnxruntime-web";
 // Force single-threaded WASM to avoid SharedArrayBuffer issues on GitHub Pages
 ort.env.wasm.numThreads = 1;
 
-import { DEIMDetector, type Detection } from "../engine/deim";
-import { PARSeqRecognizer } from "../engine/parseq-recognizer";
-import { cropImageData, decodeImage } from "../engine/image-utils";
+import { DEIMDetector, type Detection } from "../inference/detector";
+import { PARSeqRecognizer } from "../inference/recognizer";
+import { cropImageData, decodeImage } from "../inference/image-ops";
 import {
   detectionsToPage,
   findAll,
   createElement,
-} from "../parser/ndl-parser";
-import { evalPage } from "../reading-order/eval";
-import { fetchModel } from "../storage/model-cache";
+} from "../layout/detection-builder";
+import { evalPage } from "../sequencer/evaluate";
+import { fetchModel } from "../cache/model-store";
 import {
   MODEL_PRESETS,
   DEFAULT_PRESET_ID,
   type ModelPreset,
-} from "../config/model-config";
+} from "../settings/presets";
 
 // Message types
 export type WorkerMessage =
